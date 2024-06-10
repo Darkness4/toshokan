@@ -183,3 +183,5 @@ dist
 
 *.result
 e2e/tmp
+
+*.sqlite3

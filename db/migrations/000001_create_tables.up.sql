@@ -45,4 +45,12 @@ BEGIN
     DELETE FROM tags
     WHERE id NOT IN (SELECT tag_id FROM archives_tags);
 END;
+
+-- Create indexes
+CREATE INDEX idx_archives_title ON archives(title);
+CREATE INDEX idx_archives_author ON archives(author);
+CREATE INDEX idx_archives_series ON archives(series);
+CREATE INDEX idx_archives_publisher ON archives (publisher);
+CREATE INDEX idx_archives_issued ON archives (issued);
+CREATE INDEX idx_tags_namespace ON tags (namespace);
 COMMIT;
