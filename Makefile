@@ -8,6 +8,9 @@ GIT_COMMIT = $(shell git rev-parse --short=7 HEAD)
 VERSION = $(or $(and $(TAG_NAME),$(VERSION_CORE)),$(and $(TAG_NAME_DEV),$(VERSION_CORE_DEV)-dev),$(GIT_COMMIT))
 E2E_TESTS := $(shell find e2e -type f -name '*.tape')
 
+MIGRATIONS := $(shell find ./migrations -type f -name '*.sql')
+MIGRATION_NAME?=migration_name
+
 golint := $(shell which golangci-lint)
 ifeq ($(golint),)
 golint := $(shell go env GOPATH)/bin/golangci-lint
@@ -26,6 +29,16 @@ endif
 vhs := $(shell which vhs)
 ifeq ($(vhs),)
 vhs := $(shell go env GOPATH)/bin/vhs
+endif
+
+migrate := $(shell which migrate)
+ifeq ($(migrate),)
+migrate := $(shell go env GOPATH)/bin/migrate
+endif
+
+sqlc := $(shell which sqlc)
+ifeq ($(sqlc),)
+sqlc := $(shell go env GOPATH)/bin/sqlc
 endif
 
 bin/toshokan: $(GO_SRCS)
@@ -78,6 +91,18 @@ unit:
 generate:
 	go generate ./...
 
+.PHONY: migration
+migration:
+	$(migrate) create -seq -ext sql -dir db/migrations $(MIGRATION_NAME)
+
+.PHONY: up
+up: $(MIGRATIONS)
+	$(migrate) -path db/migrations -database sqlite3://db.sqlite3?x-no-tx-wrap=true up
+
+.PHONY: drop
+drop:
+	$(migrate) -path db/migrations -database sqlite3://db.sqlite3?x-no-tx-wrap=true drop -f
+
 $(golint):
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 
@@ -86,6 +111,12 @@ $(pkgsite):
 
 $(vhs):
 	go install github.com/charmbracelet/vhs@latest
+
+$(migrate):
+	go install -tags 'sqlite3' github.com/golang-migrate/migrate/v4/cmd/migrate
+
+$(sqlc):
+	go install github.com/sqlc-dev/sqlc/cmd/sqlc
 
 .PHONY: license
 license:

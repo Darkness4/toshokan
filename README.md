@@ -8,10 +8,11 @@ It also integrates a system for tagging similar to LANraragi.
 
 - OPDS API v1.2
 - Plugins to add tags
-- libSQL (SQLite) for database. Other databases can be added in the future.
+- SQLite3 for database. Other databases can be added in the future.
 - zig, rar, tar.gz, tar.xz, tar.bz2, 7z, zip, pdf, cbz, cbr, supported formats
 - LANraragi tags style: `namespace:tag`
 - Sort by title, author, date
+- Simple grouping of series
 - Distributed system (maybe)
 
 ## Follow the progress of the project
