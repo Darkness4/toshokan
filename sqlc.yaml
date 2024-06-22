@@ -1,11 +1,12 @@
 version: '2'
 sql:
-  - engine: 'sqlite'
+  - engine: 'postgresql'
     queries: 'db/queries.sql'
-    schema: 'migrations'
+    schema: 'db/migrations'
     database:
-      uri: 'sqlite3://db.sqlite3'
+      uri: '${DB_DSN}'
     gen:
       go:
         package: 'db'
         out: 'db'
+        sql_package: 'pgx/v5'

@@ -6,6 +6,8 @@ VERSION_CORE = $(shell echo $(TAG_NAME)')
 VERSION_CORE_DEV = $(shell echo $(TAG_NAME_DEV)')
 GIT_COMMIT = $(shell git rev-parse --short=7 HEAD)
 VERSION = $(or $(and $(TAG_NAME),$(VERSION_CORE)),$(and $(TAG_NAME_DEV),$(VERSION_CORE_DEV)-dev),$(GIT_COMMIT))
+DB_DSN ?= $(shell cat .env | grep DB_DSN | cut -d '=' -f 2)
+DB_DSN := $(or $(DB_DSN),$(shell cat .env.local | grep DB_DSN | cut -d '=' -f 2))
 E2E_TESTS := $(shell find e2e -type f -name '*.tape')
 
 MIGRATIONS := $(shell find ./migrations -type f -name '*.sql')
@@ -31,9 +33,9 @@ ifeq ($(vhs),)
 vhs := $(shell go env GOPATH)/bin/vhs
 endif
 
-migrate := $(shell which migrate)
-ifeq ($(migrate),)
-migrate := $(shell go env GOPATH)/bin/migrate
+goose := $(shell which goose)
+ifeq ($(goose),)
+goose := $(shell go env GOPATH)/bin/goose
 endif
 
 sqlc := $(shell which sqlc)
@@ -93,15 +95,28 @@ generate:
 
 .PHONY: migration
 migration:
-	$(migrate) create -seq -ext sql -dir db/migrations $(MIGRATION_NAME)
+	$(goose) -dir db/migrations -s create $(MIGRATION_NAME) sql
 
 .PHONY: up
 up: $(MIGRATIONS)
-	$(migrate) -path db/migrations -database sqlite3://db.sqlite3?x-no-tx-wrap=true up
+ifndef DB_DSN
+	$(error DB_DSN is not defined)
+endif
+	@$(goose) -dir db/migrations postgres $(DB_DSN) up
 
 .PHONY: drop
 drop:
-	$(migrate) -path db/migrations -database sqlite3://db.sqlite3?x-no-tx-wrap=true drop -f
+ifndef DB_DSN
+	$(error DB_DSN is not defined)
+endif
+	@$(goose) -dir db/migrations postgres $(DB_DSN) reset
+
+.PHONY: sql
+sql: $(sqlc)
+ifndef DB_DSN
+	$(error DB_DSN is not defined)
+endif
+	@DB_DSN=$(DB_DSN) $(sqlc) generate
 
 $(golint):
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
@@ -112,8 +127,8 @@ $(pkgsite):
 $(vhs):
 	go install github.com/charmbracelet/vhs@latest
 
-$(migrate):
-	go install -tags 'sqlite3' github.com/golang-migrate/migrate/v4/cmd/migrate
+$(goose):
+	go install -tags 'no_clickhouse,no_mssql,no_mysql,no_turso,no_vertica,no_ydb' github.com/pressly/goose/v3/cmd/goose
 
 $(sqlc):
 	go install github.com/sqlc-dev/sqlc/cmd/sqlc

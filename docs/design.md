@@ -4,7 +4,7 @@ Toshokan aims to provide a OPDS API for Tachiyomi and other manga readers. The A
 
 ## Database
 
-SQL is litteraly made for indexing and searching. The question is which SQL database to use. SQLite will be used for the first version knowing fully well its limitations. Other databases can be added in the future to allow for more scalability.
+SQL is litteraly made for indexing and searching. The question is which SQL database to use. PostgreSQL will be used for the first version, with compatibility with CockroachDB.
 
 ## Plugin System
 
