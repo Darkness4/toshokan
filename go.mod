@@ -7,6 +7,7 @@ require (
 	github.com/jackc/pgx/v5 v5.5.5
 	github.com/pressly/goose/v3 v3.21.1
 	github.com/rs/zerolog v1.33.0
+	github.com/shamaton/msgpack/v2 v2.2.1
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/tools v0.22.0
 )
