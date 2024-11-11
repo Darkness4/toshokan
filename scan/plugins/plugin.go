@@ -1,6 +1,6 @@
 package plugins
 
-type Metadata struct {
+type MetadataV1 struct {
 	// Title is the title of the publication.
 	Title string `msgpack:"title"`
 	// Author is the author/artist of the publication.
@@ -8,7 +8,7 @@ type Metadata struct {
 	// Language is the language of the publication.
 	Language string `msgpack:"language"`
 	// Issued is the date of the publication.
-	Issued int `msgpack:"issued"`
+	Issued uint64 `msgpack:"issued"`
 	// Publisher is the name of the publisher.
 	Publisher string `msgpack:"publisher"`
 	// Source is the path to archive file.
@@ -16,11 +16,16 @@ type Metadata struct {
 	// Links point to the sources of the archive.
 	Links []string `msgpack:"links"`
 	// Categories are the categories of the archive. It can also be considered as the tags.
-	Categories []string `msgpack:"categories"`
+	Categories []CategoryV1 `msgpack:"categories"`
 }
 
-// Plugin is an interface that all plugins must implement.
-type Plugin interface {
+type CategoryV1 struct {
+	Namespace string `msgpack:"namespace"`
+	Value     string `msgpack:"value"`
+}
+
+// PluginV1 is an interface that all plugins must implement.
+type PluginV1 interface {
 	// Name returns the name of the plugin.
 	Name() string
 	// Version returns the version of the plugin.
@@ -28,5 +33,5 @@ type Plugin interface {
 	// Path returns the path to the plugin.
 	Path() string
 	// Execute executes the plugin and returns the metadata.
-	Execute(archivePath string) (Metadata, error)
+	Execute(archivePath string) (MetadataV1, error)
 }

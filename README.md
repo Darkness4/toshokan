@@ -10,7 +10,7 @@ It also integrates a system for tagging similar to LANraragi.
 - Plugins to add tags
 - PostgreSQL for database.
 - Build with high availability.
-- zig, rar, tar.gz, tar.xz, tar.bz2, 7z, zip, pdf, cbz, cbr, supported formats
+- zig, rar, tar.gz, tar.xz, tar.bz2, 7z, zip, cbz, cbr... supported formats (whatever supports libarchive)
 - LANraragi tags style: `namespace:tag`
 - Sort by title, author, date
 - Simple grouping of series

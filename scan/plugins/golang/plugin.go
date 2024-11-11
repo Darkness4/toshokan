@@ -3,20 +3,21 @@ package golang
 import (
 	"path/filepath"
 	"plugin"
-	"strings"
 
 	"github.com/Darkness4/toshokan/scan/plugins"
+	"github.com/shamaton/msgpack/v2"
 )
 
-var _ plugins.Plugin = (*Plugin)(nil)
+var _ plugins.PluginV1 = (*Plugin)(nil)
 
 type Plugin struct {
 	// Path is the path to the Go plugin.
-	path        string
-	name        string
-	version     string
-	plugin      *plugin.Plugin
-	executeFunc func(archivePath string) (plugins.Metadata, error)
+	path   string
+	name   string
+	plugin *plugin.Plugin
+
+	versionFunc func() string
+	executeFunc func(archivePath string) ([]byte, error)
 }
 
 func NewPlugin(path string) *Plugin {
@@ -29,18 +30,30 @@ func NewPlugin(path string) *Plugin {
 	if err != nil {
 		panic(err)
 	}
+	executeFunc, ok := executeFunc.(func(archivePath string) ([]byte, error))
+	if !ok {
+		panic("Execute function is not of type func(archivePath string) ([]byte, error)")
+	}
+
+	versionFunc, err := plugin.Lookup("Version")
+	if err != nil {
+		panic(err)
+	}
+	versionFunc, ok = versionFunc.(func() string)
+	if !ok {
+		panic("Version function is not of type func() string")
+	}
 
 	name := filepath.Base(path)
 	// Remove the extension. File should end with .so.
 	name = name[:len(name)-3]
-	// Remove the version. File should end with -X.Y.Z.so.
-	name, version, _ := lastCut(name, "-")
 	return &Plugin{
-		path:        path,
-		name:        name,
-		version:     version,
-		plugin:      plugin,
-		executeFunc: executeFunc.(func(archivePath string) (plugins.Metadata, error)),
+		path:   path,
+		name:   name,
+		plugin: plugin,
+
+		versionFunc: versionFunc.(func() string),
+		executeFunc: executeFunc.(func(archivePath string) ([]byte, error)),
 	}
 }
 
@@ -51,7 +64,7 @@ func (p Plugin) Name() string {
 
 // Version is the version of the plugin.
 func (p Plugin) Version() string {
-	return p.version
+	return p.versionFunc()
 }
 
 // Path is the path to the plugin.
@@ -60,13 +73,15 @@ func (p Plugin) Path() string {
 }
 
 // Execute executes the plugin and returns the metadata.
-func (p Plugin) Execute(archivePath string) (plugins.Metadata, error) {
-	return p.executeFunc(archivePath)
-}
-
-func lastCut(s, sep string) (before, after string, found bool) {
-	if i := strings.LastIndex(s, sep); i >= 0 {
-		return s[:i], s[i+len(sep):], true
+func (p Plugin) Execute(archivePath string) (plugins.MetadataV1, error) {
+	b, err := p.executeFunc(archivePath)
+	if err != nil {
+		return plugins.MetadataV1{}, err
 	}
-	return s, "", false
+
+	var metadata plugins.MetadataV1
+	if err := msgpack.Unmarshal(b, &metadata); err != nil {
+		return plugins.MetadataV1{}, err
+	}
+	return metadata, err
 }
