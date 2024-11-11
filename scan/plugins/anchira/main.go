@@ -58,9 +58,9 @@ func Version() string {
 
 func Execute(archivePath string) ([]byte, error) {
 	log := log.With().Str("plugin", "anchira").Str("archivePath", archivePath).Logger()
-	metadataPathInArchive, err := archive.FindFile(archivePath, "koushoku.yaml")
+	metadataPathInArchive, _, err := archive.FindFile(archivePath, "koushoku.yaml")
 	if metadataPathInArchive == "" || err != nil {
-		metadataPathInArchive, err = archive.FindFile(archivePath, "info.yaml")
+		metadataPathInArchive, _, err = archive.FindFile(archivePath, "info.yaml")
 	}
 	if err != nil {
 		log.Err(err).Msg("failed to find koushoku.yaml or info.yaml")

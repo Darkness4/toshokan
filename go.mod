@@ -1,6 +1,6 @@
 module github.com/Darkness4/toshokan
 
-go 1.22.3
+go 1.23
 
 require (
 	github.com/gorilla/feeds v1.1.2

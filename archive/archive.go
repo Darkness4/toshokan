@@ -13,7 +13,12 @@ import (
 )
 
 func FindFile(archivePath string, fileName string) (path string, found bool, err error) {
-	ret := C.find_file_in_archive(C.CString(archivePath), C.CString(fileName))
+	carchivePath := C.CString(archivePath)
+	defer C.free(unsafe.Pointer(carchivePath))
+
+	cfileName := C.CString(fileName)
+	defer C.free(unsafe.Pointer(cfileName))
+	ret := C.find_file_in_archive(carchivePath, cfileName)
 	if ret.err > 0 {
 		return "", false, errors.New("failed to find file in archive")
 	}
@@ -24,7 +29,15 @@ func FindFile(archivePath string, fileName string) (path string, found bool, err
 }
 
 func ExtractFile(archivePath string, filePath string, outputPath string) error {
-	ret := C.extract_file_from_archive(C.CString(archivePath), C.CString(filePath), C.CString(outputPath))
+	carchivePath := C.CString(archivePath)
+	defer C.free(unsafe.Pointer(carchivePath))
+
+	cfilePath := C.CString(filePath)
+	defer C.free(unsafe.Pointer(cfilePath))
+
+	coutputPath := C.CString(outputPath)
+	defer C.free(unsafe.Pointer(coutputPath))
+	ret := C.extract_file_from_archive(carchivePath, cfilePath, coutputPath)
 	if ret > 0 {
 		return errors.New("failed to extract file from archive")
 	}
@@ -33,10 +46,22 @@ func ExtractFile(archivePath string, filePath string, outputPath string) error {
 }
 
 func Extract(archivePath string, outputPath string) error {
-	ret := C.extract_all_from_archive(C.CString(archivePath), C.CString(outputPath))
+	carchivePath := C.CString(archivePath)
+	defer C.free(unsafe.Pointer(carchivePath))
+
+	coutputPath := C.CString(outputPath)
+	defer C.free(unsafe.Pointer(coutputPath))
+	ret := C.extract_all_from_archive(carchivePath, coutputPath)
 	if ret > 0 {
 		return errors.New("failed to extract archive")
 	}
 
 	return nil
+}
+
+func IsSupported(archivePath string) bool {
+	carchivePath := C.CString(archivePath)
+	defer C.free(unsafe.Pointer(carchivePath))
+	ret := C.is_supported_archive(carchivePath)
+	return ret == 1
 }

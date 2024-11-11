@@ -55,3 +55,39 @@ struct find_file_in_archive_ret find_file_in_archive(const char *archive_path,
       .err = 0,
   };
 }
+
+int is_supported_archive(const char *archive_path) {
+  struct archive *archive;
+  int r;
+
+  // Initialize the archive object for reading
+  archive = archive_read_new();
+  archive_read_support_format_all(archive); // Enable support for all formats
+  archive_read_support_filter_all(archive); // Enable support for all filters
+
+  // Try to open the archive
+  r = archive_read_open_filename(archive, archive_path,
+                                 10240); // Open the file for reading
+  if (r != ARCHIVE_OK) {
+    fprintf(stderr, "Error opening archive: %s\n",
+            archive_error_string(archive));
+    archive_read_free(archive);
+    return 0; // Not a supported archive
+  }
+
+  // If we successfully opened the file, attempt to read the first entry header
+  r = archive_read_next_header(archive, NULL);
+  if (r == ARCHIVE_OK) {
+    // Successfully read the first header, meaning it's a valid archive
+    archive_read_close(archive);
+    archive_read_free(archive);
+    return 1; // Valid archive
+  }
+
+  // If we couldn't read the header, it's not a valid archive
+  fprintf(stderr, "Not a supported archive format: %s\n",
+          archive_error_string(archive));
+  archive_read_close(archive);
+  archive_read_free(archive);
+  return 0; // Not a supported archive
+}

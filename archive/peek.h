@@ -14,4 +14,6 @@ struct find_file_in_archive_ret {
 struct find_file_in_archive_ret find_file_in_archive(const char *archive_path,
                                                      const char *file_name);
 
+int is_supported_archive(const char *archive_path);
+
 #endif // PEEK_H
