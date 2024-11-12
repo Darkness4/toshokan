@@ -1,0 +1,26 @@
+source: SchaleNetwork:/g/14195/dfb84395cbdc
+title: 'title'
+subtitle: 'subtitle'
+artist:
+  - artist
+circle:
+  - circle
+parody:
+  - original
+uploader: uploader
+male:
+  - a
+  - b
+  - c
+female:
+  - a
+  - b
+  - c
+mixed:
+  - a
+  - b
+  - c
+language:
+  - english
+other:
+  - a

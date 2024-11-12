@@ -14,35 +14,58 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// StringOrArray represents a value that can be either a single string or an array of strings.
+type StringOrArray []string
+
+// UnmarshalYAML is a custom unmarshaller that handles both single string and array of strings.
+func (s *StringOrArray) UnmarshalYAML(value *yaml.Node) error {
+	// Try unmarshalling as a single string
+	var single string
+	if err := value.Decode(&single); err == nil {
+		*s = []string{single}
+		return nil
+	}
+
+	// Try unmarshalling as an array of strings
+	var array []string
+	if err := value.Decode(&array); err == nil {
+		*s = array
+		return nil
+	}
+
+	// If it doesn't match either, return an error
+	return fmt.Errorf("value must be a string or an array of strings")
+}
+
 type Metadata struct {
-	Source    string   `yaml:"Source"`
-	URL       string   `yaml:"URL"`
-	Title     string   `yaml:"Title"`
-	Artist    []string `yaml:"Artist"`
-	Circle    []string `yaml:"Circle"`
-	Parody    []string `yaml:"Parody"`
-	Magazine  []string `yaml:"Magazine"`
-	Tags      []string `yaml:"Tags"`
-	Released  uint64   `yaml:"Released"`
-	Pages     uint64   `yaml:"Pages"`
-	Thumbnail uint64   `yaml:"Thumbnail"`
+	Title          string        `yaml:"Title"`
+	Artist         StringOrArray `yaml:"Artist"`
+	Circle         StringOrArray `yaml:"Circle"`
+	Parody         StringOrArray `yaml:"Parody"`
+	Publisher      StringOrArray `yaml:"Publisher"`
+	Magazine       StringOrArray `yaml:"Magazine"`
+	Tags           StringOrArray `yaml:"Tags"`
+	Released       int64         `yaml:"Released"`
+	Pages          uint64        `yaml:"Pages"`
+	Thumbnail      int64         `yaml:"Thumbnail"`
+	ThumbnailIndex int64         `yaml:"ThumbnailIndex"`
 
 	KoushokuMetadata KoharuMetadata `yaml:",inline"`
 }
 
+// KoharuMetadata represents the legacy metadata for Koharu.
 type KoharuMetadata struct {
-	Title    string `yaml:"title"`
-	General  string `yaml:"general"`
-	Male     string `yaml:"male"`
-	Female   string `yaml:"female"`
-	Mixed    string `yaml:"mixed"`
-	Other    string `yaml:"other"`
-	Artist   string `yaml:"artist"`
-	Circle   string `yaml:"circle"`
-	Parody   string `yaml:"parody"`
-	Magazine string `yaml:"magazine"`
-	Language string `yaml:"language"`
-	Source   string `yaml:"source"`
+	Title    string        `yaml:"title"`
+	General  StringOrArray `yaml:"general"`
+	Male     StringOrArray `yaml:"male"`
+	Female   StringOrArray `yaml:"female"`
+	Mixed    StringOrArray `yaml:"mixed"`
+	Other    StringOrArray `yaml:"other"`
+	Artist   StringOrArray `yaml:"artist"`
+	Circle   StringOrArray `yaml:"circle"`
+	Parody   StringOrArray `yaml:"parody"`
+	Magazine StringOrArray `yaml:"magazine"`
+	Language StringOrArray `yaml:"language"`
 }
 
 var version = ""
@@ -110,43 +133,55 @@ func parseMetadata(path string) (plugins.MetadataV1, error) {
 		return plugins.MetadataV1{}, fmt.Errorf("failed to decode YAML")
 	}
 
+	return parseMetadataYAML(metadata)
+}
+
+func parseMetadataYAML(metadata Metadata) (plugins.MetadataV1, error) {
 	tags := make(map[plugins.CategoryV1]struct{})
 	appendTags(tags, "", metadata.Tags...)
 	appendTags(tags, "artist", metadata.Artist...)
-	appendTags(tags, "series", metadata.Parody...)
+	appendTags(tags, "circle", metadata.Circle...)
+	appendTags(tags, "parody", metadata.Parody...)
 	appendTags(tags, "magazine", metadata.Magazine...)
+	appendTags(tags, "publisher", metadata.Publisher...)
+	if metadata.Pages > 0 {
+		appendTags(tags, "pages", strconv.FormatUint(metadata.Pages, 10))
+	}
 
 	// Handle koharu tags
 	title := metadata.Title
 	if title == "" {
 		title = metadata.KoushokuMetadata.Title
 	}
-	appendTags(tags, "general", metadata.KoushokuMetadata.General)
-	appendTags(tags, "male", metadata.KoushokuMetadata.Male)
-	appendTags(tags, "female", metadata.KoushokuMetadata.Female)
-	appendTags(tags, "mixed", metadata.KoushokuMetadata.Mixed)
-	appendTags(tags, "other", metadata.KoushokuMetadata.Other)
-	appendTags(tags, "artist", metadata.KoushokuMetadata.Artist)
-	appendTags(tags, "circle", metadata.KoushokuMetadata.Circle)
-	appendTags(tags, "parody", metadata.KoushokuMetadata.Parody)
-	appendTags(tags, "magazine", metadata.KoushokuMetadata.Magazine)
-	appendTags(tags, "language", metadata.KoushokuMetadata.Language)
-	appendTags(tags, "source", metadata.KoushokuMetadata.Source)
+	appendTags(tags, "general", metadata.KoushokuMetadata.General...)
+	appendTags(tags, "male", metadata.KoushokuMetadata.Male...)
+	appendTags(tags, "female", metadata.KoushokuMetadata.Female...)
+	appendTags(tags, "mixed", metadata.KoushokuMetadata.Mixed...)
+	appendTags(tags, "other", metadata.KoushokuMetadata.Other...)
+	appendTags(tags, "artist", metadata.KoushokuMetadata.Artist...)
+	appendTags(tags, "circle", metadata.KoushokuMetadata.Circle...)
+	appendTags(tags, "parody", metadata.KoushokuMetadata.Parody...)
+	appendTags(tags, "magazine", metadata.KoushokuMetadata.Magazine...)
+	appendTags(tags, "language", metadata.KoushokuMetadata.Language...)
 
-	tags[plugins.CategoryV1{
-		Namespace: "language",
-		Value:     "english",
-	}] = struct{}{}
+	if len(metadata.KoushokuMetadata.Language) == 0 {
+		tags[plugins.CategoryV1{
+			Namespace: "language",
+			Value:     "english",
+		}] = struct{}{}
+	}
 
-	tags[plugins.CategoryV1{
-		Namespace: "date_released",
-		Value:     strconv.FormatInt(int64(metadata.Released), 10),
-	}] = struct{}{}
+	if metadata.Released > 0 {
+		tags[plugins.CategoryV1{
+			Namespace: "date_released",
+			Value:     strconv.FormatInt(int64(metadata.Released), 10),
+		}] = struct{}{}
+	}
 
-	tags[plugins.CategoryV1{
-		Namespace: "source",
-		Value:     metadata.Source,
-	}] = struct{}{}
+	thumbnailIndex := metadata.ThumbnailIndex
+	if thumbnailIndex == 0 {
+		thumbnailIndex = metadata.Thumbnail
+	}
 
 	categories := make([]plugins.CategoryV1, 0, len(tags))
 	for category := range tags {
@@ -154,19 +189,18 @@ func parseMetadata(path string) (plugins.MetadataV1, error) {
 	}
 
 	return plugins.MetadataV1{
-		Title:      title,
-		Author:     metadata.Artist[0],
-		Language:   "Japanese",
-		Issued:     metadata.Released,
-		Publisher:  metadata.Magazine[0],
-		Source:     metadata.Source,
-		Links:      []string{metadata.URL},
-		Categories: categories,
+		Title:          title,
+		Issued:         metadata.Released,
+		Categories:     categories,
+		ThumbnailIndex: thumbnailIndex,
 	}, nil
 }
 
 func appendTags(tags map[plugins.CategoryV1]struct{}, namespace string, values ...string) {
 	for _, value := range values {
+		if value == "" {
+			continue
+		}
 		tags[plugins.CategoryV1{
 			Namespace: namespace,
 			Value:     value,

@@ -15,6 +15,20 @@ It also integrates a system for tagging similar to LANraragi.
 - Sort by title, author, date
 - Simple grouping of series
 
+## Diagram
+
+```mermaid
+flowchart TB
+
+archive --> plugins
+plugins --> scan
+db --> indexer
+scan --> indexer
+
+db --> opds
+archive --> opds
+```
+
 ## Follow the progress of the project
 
 [GitHub Project](https://github.com/users/Darkness4/projects/2)

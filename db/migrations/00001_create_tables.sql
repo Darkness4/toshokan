@@ -2,8 +2,14 @@
 CREATE TABLE IF NOT EXISTS tags ( -- atom:summary
   id BIGSERIAL PRIMARY KEY,
   namespace TEXT NOT NULL, -- used for filtering
-  value TEXT -- used for sorting
+  value TEXT NOT NULL, -- used for sorting
+  UNIQUE (namespace, value)
 );
+
+-- Known namespaces:
+-- language, which is used by dc:language
+-- publisher, which is used by dc:publisher
+-- artist, which is used by atom:author
 
 CREATE TABLE IF NOT EXISTS archives (
   id BIGSERIAL NOT NULL PRIMARY KEY, -- atom:id
@@ -17,15 +23,11 @@ CREATE TABLE IF NOT EXISTS archives (
 
   date_added TIMESTAMPTZ NOT NULL, -- atom:published, Format: RFC3339
   date_updated TIMESTAMPTZ NOT NULL, -- atom:updated, Format: RFC3339,
-  author TEXT NOT NULL, -- atom:author, do not use dc:creator
   series TEXT NOT NULL, -- atom:rights
   date_issued DATE NOT NULL, -- dc:issued, Format: ISO 8601-1
-  language TEXT NOT NULL, -- dc:language
-  publisher TEXT NOT NULL, -- dc:publisher (circle)
-  issued DATE NOT NULL, -- dc:issued (event)
   -- is_new BOOLEAN NOT NULL, -- atom:category Commented temporarily
 
-  file_path TEXT NOT NULL,
+  file_path TEXT UNIQUE NOT NULL,
   thumbnail_path TEXT
 );
 
@@ -39,19 +41,17 @@ CREATE TABLE IF NOT EXISTS archives_tags ( -- many-to-many relationship
 
 -- Create indexes
 CREATE INDEX IF NOT EXISTS idx_archives_title ON archives(title);
-CREATE INDEX IF NOT EXISTS idx_archives_author ON archives(author);
 CREATE INDEX IF NOT EXISTS idx_archives_series ON archives(series);
-CREATE INDEX IF NOT EXISTS idx_archives_publisher ON archives (publisher);
-CREATE INDEX IF NOT EXISTS idx_archives_issued ON archives (issued);
+CREATE INDEX IF NOT EXISTS idx_archives_issued ON archives (date_issued);
 CREATE INDEX IF NOT EXISTS idx_tags_namespace ON tags (namespace);
+CREATE INDEX IF NOT EXISTS idx_tags_value ON tags (value);
 
 -- +goose down
 DROP INDEX IF EXISTS idx_archives_title;
-DROP INDEX IF EXISTS idx_archives_author;
 DROP INDEX IF EXISTS idx_archives_series;
-DROP INDEX IF EXISTS idx_archives_publisher;
 DROP INDEX IF EXISTS idx_archives_issued;
 DROP INDEX IF EXISTS idx_tags_namespace;
+DROP INDEX IF EXISTS idx_tags_value;
 DROP TABLE IF EXISTS archives_tags;
 DROP TABLE IF EXISTS archives;
 DROP TABLE IF EXISTS tags;

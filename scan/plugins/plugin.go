@@ -3,20 +3,12 @@ package plugins
 type MetadataV1 struct {
 	// Title is the title of the publication.
 	Title string `msgpack:"title"`
-	// Author is the author/artist of the publication.
-	Author string `msgpack:"author"`
-	// Language is the language of the publication.
-	Language string `msgpack:"language"`
 	// Issued is the date of the publication.
-	Issued uint64 `msgpack:"issued"`
-	// Publisher is the name of the publisher.
-	Publisher string `msgpack:"publisher"`
-	// Source is the path to archive file.
-	Source string `msgpack:"source"`
-	// Links point to the sources of the archive.
-	Links []string `msgpack:"links"`
+	Issued int64 `msgpack:"issued"`
 	// Categories are the categories of the archive. It can also be considered as the tags.
 	Categories []CategoryV1 `msgpack:"categories"`
+	// Index of the thumbnail in the archive.
+	ThumbnailIndex int64 `msgpack:"thumbnail_index"`
 }
 
 type CategoryV1 struct {

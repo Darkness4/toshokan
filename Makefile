@@ -1,5 +1,5 @@
-DB_DSN ?= $(shell cat .env | grep DB_DSN | cut -d '=' -f 2)
-DB_DSN := $(or $(DB_DSN),$(shell cat .env.local | grep DB_DSN | cut -d '=' -f 2))
+DB_DSN ?= $(shell cat .env.local | grep DB_DSN | cut -d '=' -f 2)
+DB_DSN := $(or $(DB_DSN),$(shell cat .env | grep DB_DSN | cut -d '=' -f 2))
 
 MIGRATIONS := $(shell find ./migrations -type f -name '*.sql')
 MIGRATION_NAME?=migration_name
@@ -53,21 +53,21 @@ up: $(MIGRATIONS)
 ifndef DB_DSN
 	$(error DB_DSN is not defined)
 endif
-	@$(goose) -dir db/migrations postgres $(DB_DSN) up
+	@$(goose) -dir db/migrations postgres "$(DB_DSN)" up
 
 .PHONY: drop
 drop:
 ifndef DB_DSN
 	$(error DB_DSN is not defined)
 endif
-	@$(goose) -dir db/migrations postgres $(DB_DSN) reset
+	@$(goose) -dir db/migrations postgres "$(DB_DSN)" reset
 
 .PHONY: sql
 sql: $(sqlc)
 ifndef DB_DSN
 	$(error DB_DSN is not defined)
 endif
-	@DB_DSN=$(DB_DSN) $(sqlc) generate
+	@DB_DSN="$(DB_DSN)" $(sqlc) generate
 
 $(golint):
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
@@ -76,7 +76,7 @@ $(goose):
 	go install -tags 'no_clickhouse,no_mssql,no_mysql,no_turso,no_vertica,no_ydb' github.com/pressly/goose/v3/cmd/goose
 
 $(sqlc):
-	go install github.com/sqlc-dev/sqlc/cmd/sqlc
+	go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
 
 $(goreleaser):
 	go install github.com/goreleaser/goreleaser/v2@latest

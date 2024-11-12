@@ -10,6 +10,7 @@ import (
 )
 
 type Scanner struct {
+	fsys    fs.FS
 	Plugins []plugins.PluginV1
 }
 
@@ -25,10 +26,15 @@ func (s *Scanner) Init() {
 	}
 }
 
+type ScanResult struct {
+	Meta plugins.MetadataV1
+	Path string
+}
+
 // Scan scans the archive at the given path and returns the metadata.
-func (s *Scanner) Scan(fsys fs.FS) func(func(plugins.MetadataV1) bool) {
-	return func(yield func(plugins.MetadataV1) bool) {
-		for entry := range WalkDirIter(fsys, ".") {
+func (s *Scanner) Scan() func(func(ScanResult) bool) {
+	return func(yield func(ScanResult) bool) {
+		for entry := range WalkDirIter(s.fsys, ".") {
 			if entry.Err != nil {
 				continue
 			}
@@ -46,7 +52,10 @@ func (s *Scanner) Scan(fsys fs.FS) func(func(plugins.MetadataV1) bool) {
 
 				// TODO: merge metadata
 			}
-			if !yield(meta) {
+			if !yield(ScanResult{
+				Meta: meta,
+				Path: entry.Path,
+			}) {
 				return
 			}
 		}

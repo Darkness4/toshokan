@@ -54,21 +54,21 @@ type Entry struct {
 	XsiXmlns     string   `xml:"xmlns:xsi,attr,omitempty"`
 	SchemaXmlns  string   `xml:"xmlns:schema,attr,omitempty"`
 
-	Title       string   `xml:"title"`
-	Updated     string   `xml:"updated"`
-	ID          string   `xml:"id"`
-	Category    Category `xml:"category,omitempty"`
+	Title       string     `xml:"title"`
+	Updated     string     `xml:"updated"`
+	ID          string     `xml:"id"`
+	Category    []Category `xml:"category,omitempty"`
 	Content     *feeds.AtomContent
 	Rights      string `xml:"rights"`
 	Source      string `xml:"source,omitempty"`
 	Published   string `xml:"published,omitempty"`
 	Contributor *feeds.AtomContributor
 
-	Summary   *Summary          // required if content has src or content is base64
-	Author    *feeds.AtomAuthor // required if feed lacks an author
-	Language  string            `xml:"dcterms:language"`
-	Publisher string            `xml:"dcterms:publisher"`
-	Issued    string            `xml:"dcterms:issued"`
+	Summary    *Summary           // required if content has src or content is base64
+	Authors    []feeds.AtomAuthor // required if feed lacks an author
+	Language   []string           `xml:"dcterms:language"`
+	Publishers []string           `xml:"dcterms:publisher"`
+	Issued     string             `xml:"dcterms:issued"`
 
 	Links []Link `xml:"link"`
 }
